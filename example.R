@@ -89,5 +89,21 @@ umf <- unmarkedMultFrame(
 )
 
 
-#Fitting occupancy models ----
+#Fitting basic occupancy models ----
+#Constant parameters
+m0 <- colext(
+  psiformula = ~ 1,     #First-year Occupancy
+  gammaformula = ~ 1,   #Colonization
+  epsilonformula = ~ 1, #Extinction
+  pformula = ~ 1,       #Detection probability
+  data = umf
+)
 
+#Time-dependent parameters
+m1 <- colext(
+  psiformula = ~ 1,     #First-year Occupancy
+  gammaformula = ~ year-1,   #Colonization
+  epsilonformula = ~ year-1, #Extinction
+  pformula = ~ year-1,       #Detection probability
+  data = umf
+)
