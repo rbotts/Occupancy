@@ -5,21 +5,20 @@ require("unmarked")
 studySpecies <- "Puma concolor" #Which species will be studied?
 
 #Data input, cleaning, organization ----
-occ.dat <- read.csv(file = "~/Documents/MooringData2018.csv")[,c(1,3,8,11,12,25)]
+occ.dat <- read.csv(file = "~/Documents/MooringData2018.csv")[,c(1,3,4,8,11,12,13,25)]
+
+#Correcting database errors
+occ.dat$Survey.Name <- gsub("Villa Mills", "Via Mills", occ.dat$Survey.Name)
+occ.dat$X[occ.dat$X == 0] <- NA
+occ.dat$Y[occ.dat$Y == 0] <- NA
 
 #Add a column to occ.dat that gives the site without the season, year, etc.
 occ.dat["Site"] <-
   gsub(
-    "\\s*20\\d\\d\\s*|\\s*Spring\\s*|\\s*Summer\\s*|\\s*Fall\\s*|\\s*National Park\\s*",
+    "\\s*\\d\\s*|\\s*Spring\\s*|\\s*Summer\\s*|\\s*Fall\\s*|\\s*National Park\\s*",
     "",
     occ.dat$Survey.Name
   )
-
-#Correcting database errors
-occ.dat$Survey.Name <- gsub("Villa Mills", "Via Mills", occ.dat$Survey.Name)
-occ.dat$Site <- gsub("Villa Mills", "Via Mills", occ.dat$Site)
-occ.dat$X[occ.dat$X == 0] <- NA
-occ.dat$Y[occ.dat$Y == 0] <- NA
 
 #Generate a regex expression to search for any site names, disregarding whitespace on either side
 sitelist <- unique(occ.dat$Site)
