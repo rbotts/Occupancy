@@ -2,13 +2,15 @@
 #Data entry & processing functions
 require("lubridate")
 
-inFile <- "~/Documents/MooringData2018.csv"
-study <- "Puma concolor"
+# Example fileInput and studySpecies
+# inFile <- "~/Documents/MooringData2018.csv"
+# study  <- "Puma concolor"
 
-#Function to take a file path to a csv (fileInput) containing Survey.Name, Date, Species, and Elevation columns, and output a more nicely formatted data.frame containing all that *and* Site, and Season columns
-occInput <- function(fileInput, dateFormat = "%m/%d/%Y", Mooring = FALSE) {
+#Function to take either a file path to a csv (fileInput) or a data.frame object (dfInput) containing Survey.Name, Date, Species, and Elevation columns, and output a more nicely formatted data.frame containing all that *and* Site, and Season columns
+occInput <- function(fileInput, dfInput = NA, dateFormat = "%m/%d/%Y", Mooring = FALSE) {
   
-  occ.dat <- read.csv(file = fileInput)
+  if (identical(dfInput, NA)) occ.dat <- read.csv(file = fileInput)
+  else occ.dat <- dfInput
   occ.dat$Date <- base::as.Date(occ.dat$Date, format = dateFormat) #Format date objects nicely
   
   #Mooring edits ----

@@ -5,12 +5,14 @@ require("unmarked")
 studySpecies <- "Puma concolor" #Which species will be studied?
 
 #Data input, cleaning, organization ----
-occ.dat <- read.csv(file = "~/Documents/MooringData2018.csv")[,c(1,3,4,8,11,12,13,25)]
+occ.dat <- read.csv(file = "~/Documents/OverlapAnalysis/Examples/sampledata.csv")
 
 #Correcting database errors
 occ.dat$Survey.Name <- gsub("Villa Mills", "Via Mills", occ.dat$Survey.Name)
-occ.dat$X[occ.dat$X == 0] <- NA
-occ.dat$Y[occ.dat$Y == 0] <- NA
+if (exists("occ.dat$X") && exists("occ.dat$Y")) {
+  occ.dat$X[occ.dat$X == 0] <- NA
+  occ.dat$Y[occ.dat$Y == 0] <- NA
+}
 
 #Add a column to occ.dat that gives the site without the season, year, etc.
 occ.dat["Site"] <-

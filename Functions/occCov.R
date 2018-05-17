@@ -2,8 +2,10 @@
 #Covariate formatting functions
 require("lubridate")
 
-inFile <- "~/Documents/MooringData2018.csv"
-study <- "Puma concolor"
+# Example fileInput, studySpecies, and covName
+# inFile <- "~/Documents/MooringData2018.csv"
+# study  <- "Puma concolor"
+# covAlt <- "Elevation"
 
 #Utility function to find the most common item in a vector
 common <- function(x) return(names(tail(sort(table(x)), n = 1)))
@@ -30,17 +32,17 @@ occCov.Year <- function(occData, studySpecies) {
   return(data.frame(yearMat))
 }
 
-#Function to take an occInput data.frame (occData) and species of interst (studySpecies) and output a covariate vector of the altitude/elevation of each site
-occCov.Alt <- function(occData, studySpecies) {
+#Function to take an occInput data.frame (occData), a species of interst (studySpecies), and the name of a column in occData containing a covariate variable (covName), outputting a covariate vector of that variable for each site
+occCov.Site <- function(occData, studySpecies, covName) {
   #Data setup ----
   ind.dat <- subset(occData, occData$Species == studySpecies & occData$Independent == "Yes")
   sitelist <- unique(ind.dat$Site)
   n <- length(sitelist) #Number of sites, just as in occMatrix
   
-  #Altitude vector ----
+  #Output vector ----
   altVec <- c()
   for (i in 1:n) {
-    tmp.dat <- subset(occData$Elevation, occData$Site == sitelist[i] & occData$Independent == "Yes")
+    tmp.dat <- subset(occData[[covName]], occData$Site == sitelist[i] & occData$Independent == "Yes")
     alt <- mean(tmp.dat, na.rm = TRUE)
     if (!is.nan(alt)) altVec[i] <- alt
     else altVec[i] <- NA
