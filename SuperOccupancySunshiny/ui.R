@@ -47,7 +47,14 @@ fluidPage(
                ),
                HTML("The source code for this app is available <u><a href=\"https://github.com/rbotts/Occupancy\">here</a></u> on Github."),
                div(style = "height:20px"),
-               wellPanel(radioButtons(inputId = "mooringCheck", label = HTML("<b>Are you using our data?</b>"), choiceNames = c("No", "Yes"), choiceValues = c(FALSE, TRUE)))
+               wellPanel(
+                 radioButtons(
+                   inputId = "mooringCheck",
+                   label = HTML("<b>Are you using our data?</b>"),
+                   choiceNames = c("No", "Yes"),
+                   choiceValues = c(FALSE, TRUE)
+                 )
+               )
         )
       )
       ),
@@ -55,26 +62,33 @@ fluidPage(
     tabPanel(
       title = "2) Variable and Covariate Selection",
       fluidRow(
-        column(4,
+        column(3,
           uiOutput("speciesSelect") #A checkbox group that allows selecting which species to be analyzed
         ),
-        column(4,
-          uiOutput("siteCovSelect"), #A checkbox group that allows selecting which covariates to be analyzed as a function of site
-          uiOutput("obsCovSelect") #A checkbox group that allows selecting which covariates to be analyzed as a function of observation
+        column(3,
+          uiOutput("siteCovSelect") #A checkbox group that allows selecting which covariates to be analyzed as a function of site
         ),
-        column(4,
-               uiOutput("yearlyCovSelect"), #A checkbox group that allows selecting which covariates to be analyzed as a function of year
-               fluidRow(column(
-                 12,
-                 HTML("Once you've selected all the variables and covariates you like, press the following button to run the Occupancy analysis. Note that this may take a few minutes to complete, especially if using a large dataset."),
-                 actionButton(
-                   inputId = "goButton",
-                   label = "Go!",
-                   width = "100%"
-                 )
-               ))
+        column(3,
+          uiOutput("seasonCovSelect") #A checkbox group that allows selecting which covariates to be analyzed as a function of year
+        ),
+        column(3,
+          uiOutput("obsCovSelect") #A checkbox group that allows selecting which covariates to be analyzed as a function of observation
         )
       )
-    )
+    ),
+    
+    #Model Selection Tab ----
+    tabPanel(
+      title = "3) Occupancy Models",
+      fluidRow(
+        column(6,
+               uiOutput("runModel"),
+               div(style = "height:20px"),
+               htmlOutput("modelParameters")
+        ),
+        column(6,
+          plotOutput("occPlots")
+        )
+      ))
   )
 )

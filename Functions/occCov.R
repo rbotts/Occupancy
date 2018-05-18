@@ -32,6 +32,25 @@ occCov.Year <- function(occData, studySpecies) {
   return(data.frame(yearMat))
 }
 
+#Function to take an occInput data.frame (occData), a species of interest (studySpecies), and the name of a column in occData containing a covariate variable (covName) and output a covariate matrix of that variable
+occCov.Season <- function(occData, studySpecies, covName) {
+  #Data setup ----
+  ind.dat <- subset(occData, occData$Species %in% studySpecies & occData$Independent == "Yes")
+  seasonlist <- unique(ind.dat$Season)
+  n <- length(unique(ind.dat$Site)) #Number of sites, just as in occMatrix
+  primary <- length(seasonlist) #Number of seasons, just as in occMatrix
+  secondary <- 1 #Number of surveys per seasons, just as in occMatrix
+  
+  #Output matrix ----
+  seasonMat <- matrix(NA, n, primary)
+  for (i in 1:primary) {
+    tmp.dat <- subset(occData[[covName]], occData$Season == seasonlist[i] & occData$Independent == "Yes")
+    tmp.vec <- mean(tmp.dat, na.rm = TRUE)
+    if (!is.nan(tmp.vec)) seasonMat[,i] <- tmp.vec
+  }
+  return(seasonMat)
+}
+
 #Function to take an occInput data.frame (occData), a species of interst (studySpecies), and the name of a column in occData containing a covariate variable (covName), outputting a covariate vector of that variable for each site
 occCov.Site <- function(occData, studySpecies, covName) {
   #Data setup ----

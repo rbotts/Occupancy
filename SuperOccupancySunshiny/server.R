@@ -48,7 +48,7 @@ occMatrix <- function(occData, studySpecies) {
   #Function to take an occInput data.frame (occData) and output a detection matrix for the specified species of interest (studySpecies)
   
   #Data setup ----
-  ind.dat <- subset(occData, occData$Independent == "Yes" & occData$Species == studySpecies)
+  ind.dat <- subset(occData, occData$Independent == "Yes" & occData$Species %in% studySpecies)
   sitelist <- unique(ind.dat$Site)
   seasonlist <- unique(ind.dat$Season)
   n <- length(sitelist) #Number of sites (e.g: Savegre Valley + Bosque de Agua = 2 sites)
@@ -88,11 +88,30 @@ occMatrix <- function(occData, studySpecies) {
   return(y)
 }
 common <- function(x) return(names(tail(sort(table(x)), n = 1))) #Utility function to find the most common item in a vector
+occCov.Season <- function(occData, studySpecies, covName) {
+  #Function to take an occInput data.frame (occData), a species of interest (studySpecies), and the name of a column in occData containing a covariate variable (covName) and output a covariate matrix of that variable
+  
+  #Data setup ----
+  ind.dat <- subset(occData, occData$Species %in% studySpecies & occData$Independent == "Yes")
+  seasonlist <- unique(ind.dat$Season)
+  n <- length(unique(ind.dat$Site)) #Number of sites, just as in occMatrix
+  primary <- length(seasonlist) #Number of seasons, just as in occMatrix
+  secondary <- 1 #Number of surveys per seasons, just as in occMatrix
+  
+  #Output matrix ----
+  seasonMat <- matrix(NA, n, primary)
+  for (i in 1:primary) {
+    tmp.dat <- subset(occData[[covName]], occData$Season == seasonlist[i] & occData$Independent == "Yes")
+    tmp.vec <- mean(tmp.dat, na.rm = TRUE)
+    if (!is.nan(tmp.vec)) seasonMat[,i] <- tmp.vec
+  }
+  return(seasonMat)
+}
 occCov.Year <- function(occData, studySpecies) {
   #Function to take an occInput data.frame (occData) and species of interest (studySpecies) and output a covariate matrix of the year of each survey
   
   #Data setup ----
-  ind.dat <- subset(occData, occData$Species == studySpecies & occData$Independent == "Yes")
+  ind.dat <- subset(occData, occData$Species %in% studySpecies & occData$Independent == "Yes")
   seasonlist <- unique(ind.dat$Season)
   n <- length(unique(ind.dat$Site)) #Number of sites, just as in occMatrix
   primary <- length(seasonlist) #Number of seasons, just as in occMatrix
@@ -114,7 +133,7 @@ occCov.Site <- function(occData, studySpecies, covName) {
   #Function to take an occInput data.frame (occData), a species of interst (studySpecies), and the name of a column in occData containing a covariate variable (covName), outputting a covariate vector of that variable for each site
   
   #Data setup ----
-  ind.dat <- subset(occData, occData$Species == studySpecies & occData$Independent == "Yes")
+  ind.dat <- subset(occData, occData$Species %in% studySpecies & occData$Independent == "Yes")
   sitelist <- unique(ind.dat$Site)
   n <- length(sitelist) #Number of sites, just as in occMatrix
   
@@ -128,6 +147,18 @@ occCov.Site <- function(occData, studySpecies, covName) {
   }
   return(altVec)
 }
+plotBar <- function(percentage, xlab, barColor = "grey") {
+  #Plots a loading bar that is percentage% complete and the color of barColor, with a message specified by xlab
+  if (length(percentage) > 1 || !is.numeric(percentage)) warning("percentage must be a numeric vector of length 1!")
+  else {
+    marOrig <- par("mar")
+    finOrig <- par("fin")
+    par(mar=c(1,0,0,0), fin=c(4, 0.5))
+    barplot(percentage, col = barColor, xlim = c(0,100), horiz = TRUE, axes = FALSE)
+    mtext(xlab, side = 1)
+    par(mar=marOrig, fin = finOrig)
+  }
+}
 
 #Server function ----
 function(input, output) {
@@ -139,7 +170,7 @@ function(input, output) {
     #2) Var/Cov UI ----
     occNames <- names(occ.dat)
     
-    output$speciesSelect <<- renderUI(
+    output$speciesSelect <- renderUI(
       checkboxGroupInput(
         inputId = "speciesChosen",
         label = "Choose one species to analyze:",
@@ -147,39 +178,110 @@ function(input, output) {
       )
     )
     
-    output$siteCovSelect <<- renderUI(
+    output$siteCovSelect <- renderUI(
       checkboxGroupInput(inputId = "siteCovChosen",
                          label = "Choose covariates that vary by site:",
                          choices = occNames[occNames != "Survey.Name" &
-                                            occNames != "Species" &
-                                            occNames != "Date" &
-                                            occNames != "Independent" &
-                                            occNames != "Site"])
+                                              occNames != "Species" &
+                                              occNames != "Date" &
+                                              occNames != "Independent" &
+                                              occNames != "Site"])
     )
     
-    output$obsCovSelect <<- renderUI(
+    output$obsCovSelect <- renderUI(
       checkboxGroupInput(
         inputId = "obsCovChosen",
         label = "Choose covariates that vary by observation:",
         choices = occNames[occNames != "Survey.Name" &
-                           occNames != "Species" &
-                           occNames != "Independent"]
-        )
+                             occNames != "Species" &
+                             occNames != "Independent"]
+      )
     )
     
-    output$yearlyCovSelect <<- renderUI(
+    output$seasonCovSelect <- renderUI(
       checkboxGroupInput(
-        inputId = "yearlyCovChosen",
-        label = "Choose covariates that vary by year:",
-        choices = c(occNames[occNames != "Survey.Name" &
-                             occNames != "Species" &
-                             occNames != "Date" &
-                             occNames != "Independent"],
-                    "Year"),
+        inputId = "seasonCovChosen",
+        label = "Choose covariates that vary by season:",
+        choices = c("Year",
+                    occNames[occNames != "Survey.Name" &
+                               occNames != "Species" &
+                               occNames != "Date" &
+                               occNames != "Independent"]),
         selected = "Year"
       )
     )
     
-    #
+    output$runModel <- renderUI(
+      wellPanel(
+        fluidRow(column(12, align = "center",
+                        div("Once you've selected all the variables and covariates you like, press the following button to run the Occupancy analysis. Note that this may take a few minutes to complete, especially if using a large dataset.", style = "text-align:left"),
+                        actionButton(
+                          inputId = "goButton",
+                          label = "Go!",
+                          width = "50%"
+                        )
+                 )
+        )
+      )
+    )
+    
+    #3) Model Select ----
+        observeEvent(eventExpr = input$goButton, handlerExpr = {
+      
+      #SiteCov ----
+      siteCovList <- data.frame(site = 1:length(unique(occ.dat$Site[occ.dat$Species %in% input$speciesChosen])))
+      if (!is.null(length(input$siteCovChosen))) {
+        for (i in 1:length(input$siteCovChosen)) {
+          siteCovList <- cbind( #Add new column to siteCovList for siteCovChosen i
+            siteCovList,
+            occCov.Site(
+              occData = occ.dat,
+              studySpecies = input$speciesChosen,
+              covName = input$siteCovChosen[i]
+            )
+          )
+          names(siteCovList) <- c("site", input$siteCovChosen[1:i]) #Name columns appropriately
+        }
+      }
+      
+      #ObsCov ----
+      #To add later...
+      
+      #SeasonCov ----
+      seasonCovList <- list()
+      
+      if(!is.null(length(input$seasonCovChosen))) {
+        for (i in 1:length(input$seasonCovChosen)) {
+          if (input$seasonCovChosen[i] == "Year") {
+            seasonCovList$Year <- occCov.Year(occData = occ.dat, studySpecies = input$speciesChosen)
+          }
+          else {
+            seasonCovList[[input$seasonCovChosen[i]]] <- occCov.Season(occData = occ.dat, studySpecies = input$speciesChosen, covName = input$seasonCovChosen[i])
+          }
+        }
+      }
+      
+      #Modeling ----
+      m0 <- unmarkedMultFrame( #Model the data with the covariates selected in tab 2
+        y = occMatrix(occData = occ.dat, studySpecies = input$speciesChosen),
+        siteCovs = siteCovList,
+        numPrimary = length(unique(occ.dat$Season[occ.dat$Species %in% input$speciesChosen])),
+        yearlySiteCovs = seasonCovList
+      )
+      
+      out <- capture.output(print(summary(m0))) #Capture the model summary as a character vector
+      
+      output$modelParameters <- renderUI( #Output the model summary as a nice HTML box
+        HTML(
+          paste(
+            c("<pre>", #Wrap everything with <pre> tags to preserve whitespace formatting
+              "<h4>", input$speciesChosen, "</h4>", #Header for the box: species being studied
+              gsub("<NA>", " NA ", out[3:length(out)], fixed = TRUE), #items between <> confuse HTML, so get rid of them
+              "</pre>"),
+            collapse = "<br>" #throw a <br> between every line to preserve newline formatting
+          )
+        )
+      )
+    })
   })
 }
