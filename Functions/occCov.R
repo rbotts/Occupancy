@@ -14,8 +14,8 @@ common <- function(x) return(names(tail(sort(table(x)), n = 1)))
 occCov.Year <- function(occData, studySpecies) {
   #Data setup ----
   ind.dat <- subset(occData, occData$Species == studySpecies & occData$Independent == "Yes")
-  seasonlist <- unique(ind.dat$Season)
-  n <- length(unique(ind.dat$Site)) #Number of sites, just as in occMatrix
+  seasonlist <- unique(occData$Season)
+  n <- length(unique(occData$Site)) #Number of sites, just as in occMatrix
   primary <- length(seasonlist) #Number of seasons, just as in occMatrix
   secondary <- 1 #Number of surveys per seasons, just as in occMatrix
   
@@ -36,8 +36,8 @@ occCov.Year <- function(occData, studySpecies) {
 occCov.Season <- function(occData, studySpecies, covName) {
   #Data setup ----
   ind.dat <- subset(occData, occData$Species %in% studySpecies & occData$Independent == "Yes")
-  seasonlist <- unique(ind.dat$Season)
-  n <- length(unique(ind.dat$Site)) #Number of sites, just as in occMatrix
+  seasonlist <- unique(occData$Season)
+  n <- length(unique(occData$Site)) #Number of sites, just as in occMatrix
   primary <- length(seasonlist) #Number of seasons, just as in occMatrix
   secondary <- 1 #Number of surveys per seasons, just as in occMatrix
   

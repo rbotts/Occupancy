@@ -49,8 +49,8 @@ occMatrix <- function(occData, studySpecies) {
   
   #Data setup ----
   ind.dat <- subset(occData, occData$Independent == "Yes" & occData$Species %in% studySpecies)
-  sitelist <- unique(ind.dat$Site)
-  seasonlist <- unique(ind.dat$Season)
+  sitelist <- unique(occData$Site)
+  seasonlist <- unique(occData$Season)
   n <- length(sitelist) #Number of sites (e.g: Savegre Valley + Bosque de Agua = 2 sites)
   primary <- length(seasonlist) #Number of seasons (e.g: Spring 2014 + Summer 2015 + Fall 2017 = 3 seasons)
   secondary <- 1 #Number of surveys in each season (How many times did we go out into the field each season? We'll call it one for now and just look at detection vs nondetection across that whole season, may go more granular later...)
@@ -92,9 +92,8 @@ occCov.Season <- function(occData, studySpecies, covName) {
   #Function to take an occInput data.frame (occData), a species of interest (studySpecies), and the name of a column in occData containing a covariate variable (covName) and output a covariate matrix of that variable
   
   #Data setup ----
-  ind.dat <- subset(occData, occData$Species %in% studySpecies & occData$Independent == "Yes")
-  seasonlist <- unique(ind.dat$Season)
-  n <- length(unique(ind.dat$Site)) #Number of sites, just as in occMatrix
+  seasonlist <- unique(occData$Season)
+  n <- length(unique(occData$Site)) #Number of sites, just as in occMatrix
   primary <- length(seasonlist) #Number of seasons, just as in occMatrix
   secondary <- 1 #Number of surveys per seasons, just as in occMatrix
   
@@ -111,9 +110,8 @@ occCov.Year <- function(occData, studySpecies) {
   #Function to take an occInput data.frame (occData) and species of interest (studySpecies) and output a covariate matrix of the year of each survey
   
   #Data setup ----
-  ind.dat <- subset(occData, occData$Species %in% studySpecies & occData$Independent == "Yes")
-  seasonlist <- unique(ind.dat$Season)
-  n <- length(unique(ind.dat$Site)) #Number of sites, just as in occMatrix
+  seasonlist <- unique(occData$Season)
+  n <- length(unique(occData$Site)) #Number of sites, just as in occMatrix
   primary <- length(seasonlist) #Number of seasons, just as in occMatrix
   secondary <- 1 #Number of surveys per seasons, just as in occMatrix
   
@@ -133,8 +131,7 @@ occCov.Site <- function(occData, studySpecies, covName) {
   #Function to take an occInput data.frame (occData), a species of interst (studySpecies), and the name of a column in occData containing a covariate variable (covName), outputting a covariate vector of that variable for each site
   
   #Data setup ----
-  ind.dat <- subset(occData, occData$Species %in% studySpecies & occData$Independent == "Yes")
-  sitelist <- unique(ind.dat$Site)
+  sitelist <- unique(occData$Site)
   n <- length(sitelist) #Number of sites, just as in occMatrix
   
   #Output vector ----
@@ -147,7 +144,7 @@ occCov.Site <- function(occData, studySpecies, covName) {
   }
   return(altVec)
 }
-plotBar <- function(percentage, xlab, barColor = "grey") {
+plotBar <- function(percentage, xlab, barColor = "darkred") {
   #Plots a loading bar that is percentage% complete and the color of barColor, with a message specified by xlab
   if (length(percentage) > 1 || !is.numeric(percentage)) warning("percentage must be a numeric vector of length 1!")
   else {
@@ -229,7 +226,7 @@ function(input, output) {
         observeEvent(eventExpr = input$goButton, handlerExpr = {
       
       #SiteCov ----
-      siteCovList <- data.frame(site = 1:length(unique(occ.dat$Site[occ.dat$Species %in% input$speciesChosen])))
+      siteCovList <- data.frame(site = 1:length(unique(occ.dat$Site)))
       if (!is.null(length(input$siteCovChosen))) {
         for (i in 1:length(input$siteCovChosen)) {
           siteCovList <- cbind( #Add new column to siteCovList for siteCovChosen i
@@ -262,15 +259,29 @@ function(input, output) {
       }
       
       #Modeling ----
-      m0 <- unmarkedMultFrame( #Model the data with the covariates selected in tab 2
+      umf <- unmarkedMultFrame( #Model the data with the covariates selected in tab 2
         y = occMatrix(occData = occ.dat, studySpecies = input$speciesChosen),
         siteCovs = siteCovList,
-        numPrimary = length(unique(occ.dat$Season[occ.dat$Species %in% input$speciesChosen])),
+        numPrimary = length(unique(occ.dat$Season)),
         yearlySiteCovs = seasonCovList
+        #, obsCovs = #a list of covariates that vary by both survey and season
       )
       
-      out <- capture.output(print(summary(m0))) #Capture the model summary as a character vector
       
+      m0 <<- colext(
+        psiformula = ~ 1,
+        gammaformula = ~Year + Elevation,
+        epsilonformula = ~Year + Elevation,
+        pformula = ~Year,
+        data = umf
+      )
+      
+      out <- capture.output({
+        print(summary(umf))
+        print(summary(m0))
+      }) #Capture the model summary as a character vector
+      
+      #Model text out ----
       output$modelParameters <- renderUI( #Output the model summary as a nice HTML box
         HTML(
           paste(
@@ -282,6 +293,83 @@ function(input, output) {
           )
         )
       )
+      
+      #Model plot out ----
+      siteC <- names(siteCovList)
+      
+      #Psi prediction
+      nd.psi <- data.frame(Elevation = 1:3500)
+      E.psi <<- predict(object = m0, type = "psi", newdata = nd.psi, appendData = TRUE)
+      
+      #E.col <- predict(object = m0, type = "col", newdata = nd, appendData= TRUE)
+      #E.ext <- predict(object = m0, type = "ext", newdata = nd, appendData= TRUE)
+      
+      #Det prediction
+      yearUnique <- unique(year(occ.dat$Date))
+      nd.det <- data.frame(
+        Year = factor(as.character(yearUnique[1]), levels = yearUnique)
+      )
+      E.det <<- predict(object = m0, type = "det", newdata = nd.det, appendData = TRUE)
+      
+      output$occPlots <- renderPlot({
+        
+        par(mfcol = c(2,1))
+        
+        #Psi plot
+        plot(
+          x = E.psi$Elevation,
+          y = E.psi$Predicted,
+          ylim = c(-3,3),
+          type = "l",
+          ylab = expression(hat(psi)),
+          main = paste(input$speciesChosen, sep = ", "),
+          cex.lab = 0.8,
+          cex.axis = 0.8
+        )
+        lines(E.psi$Elevation, E.psi$Predicted+1.96*E.psi$SE, col=gray(0.7))
+        lines(E.psi$Elevation, E.psi$Predicted-1.96*E.psi$SE, col=gray(0.7))
+        
+        #Col plot
+        # plot(
+        #   x = E.col$Elevation,
+        #   y = E.col$Predicted,
+        #   ylim = c(-3,3),
+        #   type = "l",
+        #   ylab = expression(gamma),
+        #   cex.lab = 0.8,
+        #   cex.axis = 0.8
+        # )
+        # lines(E.col$Elevation, E.col$Predicted+1.96*E.psi$SE, col=gray(0.7))
+        # lines(E.col$Elevation, E.col$Predicted-1.96*E.psi$SE, col=gray(0.7))
+        # 
+        # #Ext plot
+        # plot(
+        #   x = E.ext$Elevation,
+        #   y = E.ext$Predicted,
+        #   ylim = c(-3,3),
+        #   type = "l",
+        #   ylab = expression(epsilon),
+        #   cex.lab = 0.8,
+        #   cex.axis = 0.8
+        # )
+        # lines(E.ext$Elevation, E.ext$Predicted+1.96*E.psi$SE, col=gray(0.7))
+        # lines(E.ext$Elevation, E.ext$Predicted-1.96*E.psi$SE, col=gray(0.7))
+        # 
+        #Det plot
+        plot(
+          x = E.det$Year,
+          y = E.det$Predicted,
+          ylim = c(-3,3),
+          type = "l",
+          ylab = expression(italic(p)),
+          cex.lab = 0.8,
+          cex.axis = 0.8
+        )
+        lines(E.det$Year, E.det$Predicted+1.96*E.psi$SE, col=gray(0.7))
+        lines(E.det$Year, E.det$Predicted-1.96*E.psi$SE, col=gray(0.7))
+        
+        par(mfcol = c(1,1))
+      })
     })
   })
 }

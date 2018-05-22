@@ -50,8 +50,8 @@ occInput <- function(fileInput, dfInput = NA, dateFormat = "%m/%d/%Y", Mooring =
 occMatrix <- function(occData, studySpecies) {
   #Data setup ----
   ind.dat <- subset(occData, occData$Independent == "Yes" & occData$Species == studySpecies)
-  sitelist <- unique(ind.dat$Site)
-  seasonlist <- unique(ind.dat$Season)
+  sitelist <- unique(occData$Site)
+  seasonlist <- unique(occData$Season)
   n <- length(sitelist) #Number of sites (e.g: Savegre Valley + Bosque de Agua = 2 sites)
   primary <- length(seasonlist) #Number of seasons (e.g: Spring 2014 + Summer 2015 + Fall 2017 = 3 seasons)
   secondary <- 1 #Number of surveys in each season (How many times did we go out into the field each season? We'll call it one for now and just look at detection vs nondetection across that whole season, may go more granular later...)
@@ -62,7 +62,7 @@ occMatrix <- function(occData, studySpecies) {
   for (j in 1:primary) {
     for (i in 1:n) {
       if (length(occData$Species[occData$Site == sitelist[i] & occData$Season == seasonlist[j]]) >= 1) {
-        #If there are any detections at a particular site *and* season, record a 1 in the matrix
+        #If there are *any* detections at a particular site *and* season, record a 1 in the matrix
         ssmat[i,j] <- 1
       }
       #Otherwise record a 0
