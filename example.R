@@ -40,7 +40,7 @@ occ.dat["Season"] <-
 
 #Preparing unmarkedMultFrame ----
 ind.dat <- subset(occ.dat, occ.dat$Independent == "Yes" & occ.dat$Species == studySpecies)
-seasonlist <- unique(ind.dat$Season)
+seasonlist <- unique(occ.dat$Season)
 sitelist <- unique(ind.dat$Site)
 
 n <- length(sitelist) #Number of sites

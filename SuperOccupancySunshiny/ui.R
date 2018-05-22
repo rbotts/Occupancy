@@ -77,7 +77,7 @@ fluidPage(
       )
     ),
     
-    #Model Selection Tab ----
+    #Model Tab ----
     tabPanel(
       title = "3) Occupancy Models",
       fluidRow(
