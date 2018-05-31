@@ -162,7 +162,7 @@ function(input, output) {
   observeEvent(eventExpr = input$dataButton, handlerExpr = {
     #Save uploaded csv as a data.frame
     raw.dat <- read.csv(input$updata$datapath, stringsAsFactors = FALSE)
-    occ.dat <- occInput(dfInput = raw.dat, Mooring = input$mooringCheck)
+    occ.dat <<- occInput(dfInput = raw.dat, Mooring = input$mooringCheck)
     
     #2) Var/Cov UI ----
     occNames <- names(occ.dat)
@@ -305,8 +305,8 @@ function(input, output) {
       #E.ext <- predict(object = m0, type = "ext", newdata = nd, appendData= TRUE)
       
       #Det prediction
-      yearUnique <- unique(year(occ.dat$Date))
-      nd.det <- data.frame(
+      yearUnique <<- unique(year(occ.dat$Date))
+      nd.det <<- data.frame(
         Year = factor(as.character(yearUnique[1]), levels = yearUnique)
       )
       E.det <<- predict(object = m0, type = "det", newdata = nd.det, appendData = TRUE)
