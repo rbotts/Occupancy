@@ -58,9 +58,9 @@ costaRicaExtent <- extent(x = -86, xmax = -82, ymin = 8, ymax = 11)
 woodybiomass <- crop(x = woodybiomass, y = costaRicaExtent)
 
 #Plot Setup
-png(filename = paste0(output, ".png"), width = 1024, height = 768)
+png(filename = "Plots/WHRC-WoodyBiomass.png", width = 1024, height = 768)
 par(mar = c(5,5,5,5)+0.1)
-plot(x = c(-84,9), xlim = c(-86,-82), ylim = c(8,11), type = "n", main = "Aboveground Woody Biomass in Costa Rica", xlab = "Longitude", ylab = "Latitude")
+plot(x = c(-84,9), xlim = c(-86,-82), ylim = c(8,11), type = "n", main = "Aboveground Woody Biomass in Costa Rica (Mg/Hectare)", xlab = "Longitude", ylab = "Latitude")
 
 #Plot data and map
 plot(woodybiomass, add = TRUE)

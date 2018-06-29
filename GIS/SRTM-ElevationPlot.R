@@ -1,5 +1,5 @@
 #R Version 3.4.4
-#Use python-gdal software to merge several SRTRM files into one raster file, then plot the whole data set with rworldmap outlines overlaid
+#Use python-gdal software to merge several NASA Shuttle Radar Topography Mission (SRTM) files into one raster file, then plot the whole data set with rworldmap outlines overlaid
 require("raster")
 require("rworldmap")
 require("rworldxtra")
@@ -59,7 +59,7 @@ pyGDAL_merge_SRTM <- function(path, outFile, xlim, ylim) {
 
 #Set path to folder containing unzipped .hgt files
 path <- "~/Downloads/HGT"
-outFile <- "rpytest.tif"
+outFile <- "CostaRica-SRTM.tif"
 
 #Merge selected SRTM files into one raster file
 pyGDAL_merge_SRTM(path = path,
@@ -67,9 +67,9 @@ pyGDAL_merge_SRTM(path = path,
                   xlim = c(-86,-82), ylim = c(8,11))
 
 #Plot setup
-png(filename = paste0(path, "/", "CR-SRTM.png"), width = 1024, height = 768)
+png(filename = "Plots/SRTM-Elevation.png", width = 1024, height = 768)
 par(mar = c(5,5,5,5)+0.1)
-plot(x = 0, y = 0, xlim = c(-86,-82), ylim = c(8,11), xlab = "Longitude", ylab = "Latitude", main = "Elevation in Costa Rica", type = "n")
+plot(x = 0, y = 0, xlim = c(-86,-82), ylim = c(8,11), xlab = "Longitude", ylab = "Latitude", main = "Elevation in Costa Rica (Meters above Sea Level)", type = "n")
 
 #Plot raster data
 elevation <- raster(paste0(path, "/", outFile))

@@ -33,15 +33,19 @@ path <- "~/Downloads/hii_n_america_grid/hii_n_amer"
 output <- "HII_NorthAmerica.tif"
 pyGDAL_translate(path = path, outFile = output)
 
+#Load data and zoom in to only Costa Rica
+hii <- raster(x = paste0(path, "/", output))
+costaRicaExtent <- extent(x = -86, xmax = -82, ymin = 8, ymax = 11)
+hii <- crop(x = hii, y = costaRicaExtent)
+
 #Plot Setup
-png(filename = paste0(path, "/", output, ".png"), width = 1024, height = 768)
+png(filename = "Plots/HumanInfluence.png", width = 1024, height = 768)
 par(mar = c(5,5,5,5)+0.1)
 plot(x = c(-84,9), xlim = c(-86,-82), ylim = c(8,11), type = "n", main = "Human Influence Index in Costa Rica", xlab = "Longitude", ylab = "Latitude")
 
 #Load and plot data
-hii <- raster(x = paste0(path, "/", output))
 newmap <- getMap(resolution = "high")
-plot(hii, add = TRUE, maxpixels = 3e7)
+plot(hii, add = TRUE)
 plot(newmap, add = TRUE)
 
 #Clean up
