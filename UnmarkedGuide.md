@@ -15,15 +15,18 @@ This type of model looks at *changes in occupancy over time.* It requires taking
 3. **Multi-species, single-season**
 This type of model uses the estimated occupancy of *other species in the community* to model the occupancy of a given species. It is more complex than the two single-species models, and we will not discuss it here.
 4. **Multi-species, multi-season**
-This type of model is the most complex. It uses the estimated occupancy of *other species in the community* as covariates, just as in the multi-species/single-season case, but also models the changes over time, as in the single-species/multi-season case. For an example, see [this 2015 publication by MW Tobler, et al](https://www.rdcu.be/Omqb "Spatiotemporal hierarchical modelling of species richness and occupancy using camera trap data"). We will not discuss this type of model here.
+This type of model is the most complex. It uses the estimated occupancy of *other species in the community* as covariates, just as in the multi-species/single-season case, but also models the changes over time, as in the single-species/multi-season case. For an example, see [this 2015 publication by MW Tobler, et al]. We will not discuss this type of model here.
 
-For a more comprehensive discussion of occupancy modeling techniques, especially for multi-species cases, the 2005 book [Occupancy Estimation and Modeling](https://www.elsevier.com/books/occupancy-estimation-and-modeling/mackenzie/978-0-12-088766-8 "ISBN: 9780120887668") is an excellent reference.
+For a more comprehensive discussion of occupancy modeling techniques, especially for multi-species cases, the 2005 book [Occupancy Estimation and Modeling] is an excellent reference.
+
+[this 2015 publication by MW Tobler, et al]: https://www.rdcu.be/Omqb "Spatiotemporal hierarchical modelling of species richness and occupancy using camera trap data"
+[Occupancy Estimation and Modeling]: https://www.elsevier.com/books/occupancy-estimation-and-modeling/mackenzie/978-0-12-088766-8 "ISBN: 9780120887668"
 
 ---
 
 ### Overview: Dynamic Occupancy Modeling with `unmarked`
 
-There are 3 main methods for modeling occupancy in R, discussed at length in [this 2017 publication by O. Gimenez](https://rpubs.com/ogimenez/297167 "Fitting dynamic occupancy models in ADMB"). The most important conclusion of that study was that the package `unmarked` (based on C\+\+) is the "fastest" (most computationally efficient) followed by `R2admb`, with `rjags` (based on JAGS) trailing far behind. Based on that information, **`unmarked` is generally the best choice for any occupancy analysis** (so long as it supports all the features you need; if not, you'll need to learn ADMB and `r2admb`).
+There are 3 main methods for modeling occupancy in R, discussed at length in [this 2017 publication by O. Gimenez]. The most important conclusion of that study was that the package `unmarked` (based on C\+\+) is the "fastest" (most computationally efficient) followed by `R2admb`, with `rjags` (based on JAGS) trailing far behind. Based on that information, **`unmarked` is generally the best choice for any occupancy analysis** (so long as it supports all the features you need; if not, you'll need to learn ADMB and `r2admb`).
 
 The basic workflow for doing dynamic occupancy modeling in `unmarked` is as follows:
 
@@ -33,6 +36,8 @@ The basic workflow for doing dynamic occupancy modeling in `unmarked` is as foll
 4. Choose the "best" model based on the results from `fitList` and your own requirements
 
 In the next section, we will go over these four steps in more detail.
+
+[this 2017 publication by O. Gimenez]: https://rpubs.com/ogimenez/297167 "Fitting dynamic occupancy models in ADMB"
 
 ---
 
@@ -63,9 +68,11 @@ The season-covariates list `yearlySiteCovs` should be a **list of matrices**. Ea
 **A note about NA (missing) values in this data:**
 > AIC-based model selection requires that all models are fit to the same data. `unmarked` removes missing data in a context specific way.  For missing `siteCovs`, the entire row of data must be removed.  However, for missing `yearlySiteCovs` or `obsCovs`, only the corresponding observation are removed.  Thus, **if `unmarked` removes different observations from different models, the models cannot be compared using AIC**. A way around this is to remove the detection data corresponding to missing covariates before fitting the models.
 > 
-> --- [Marc Kery and Richard Chandler](https://cran.r-project.org/web/packages/unmarked/vignettes/colext.pdf "Vignette: Dynamic occupancy models in unmarked"), emphasis added
+> --- [Marc Kery and Richard Chandler], emphasis added
 
 Although, if *all* the models being compared have the covariate with the missing data, then it shouldn't be an issue, as `unmarked` will process them all in the same way.
+
+[Marc Kery and Richard Chandler]: https://cran.r-project.org/web/packages/unmarked/vignettes/colext.pdf "Vignette: Dynamic occupancy models in unmarked"
 
 #### Creating `colext` models
 
