@@ -3,11 +3,11 @@
 ## Table of Contents
 
 - [What is Occupancy?](#what-is-occupancy)
-- [Overview: Dynamic Occupancy Modeling with `unmarked`](#overview-dynamic-occupancy-modeling-with-`unmarked`)
-- [Using `colext` for single-species, multi-season models](#using-`colext`-for-single-species-multi-season-models)
-	- [Creating an `unmarkedMultFrame`](#creating-an-`unmarkedmultframe`)
-	- [Creating `colext` models](#creating-`colext`-models)
-	- [Comparing model fit with `fitList`](#comparing-model-fit-with-`fitlist`)
+- [Overview: Dynamic Occupancy Modeling with unmarked](#overview-dynamic-occupancy-modeling-with-unmarked)
+- [Using colext for single-species, multi-season models](#using-colext-for-single-species-multi-season-models)
+	- [Creating an `unmarkedMultFrame`](#creating-an-unmarkedmultframe)
+	- [Creating `colext` models](#creating-colext-models)
+	- [Comparing model fit with `fitList`](#comparing-model-fit-with-fitlist)
 	- [Choosing the "best" model](#choosing-the-best-model)
 
 ---
