@@ -14,7 +14,7 @@
 
 ### What is Occupancy?
 
-Occupancy is the parameter \\(\psi\\) that describes whether a particular entity \\(y\\) *occupies* a particular site (i.e: an animal is present in a specific nature reserve). Originally developed for use in ecological research, occupany modeling is a statistical technique that seeks to estimate the "true" occupancy of a given set of sites based on survey data. In the most common approaches, models take into account that the probability of detection is almost certainly imperfect and unknown (that is, there is some unspecified probability, greater than 0, of surveying a site and *not detecting* a species that is truly present there, a **false negative**). However, note that very few models can cope with **false positives** (surveying a site and "detecting" a species that is truly *absent* there).
+Occupancy is the parameter `ψ` that describes whether a particular entity `y` *occupies* a particular site (i.e: an animal is present in a specific nature reserve). Originally developed for use in ecological research, occupany modeling is a statistical technique that seeks to estimate the "true" occupancy of a given set of sites based on survey data. In the most common approaches, models take into account that the probability of detection is almost certainly imperfect and unknown (that is, there is some unspecified probability, greater than 0, of surveying a site and *not detecting* a species that is truly present there, a **false negative**). However, note that very few models can cope with **false positives** (surveying a site and "detecting" a species that is truly *absent* there).
 
 Unfortunately, this field is so young that the terminology has not quite solidified yet: different groups may use different names for the same techniques. Whenever introducing a new term, I will also list any synonyms I have seen before. Hopefully that approach will allow the reader to effectively search for more information about a particular term, if it is difficult to find resources using the terminology that I prefer.
 
@@ -92,12 +92,12 @@ Before we start, another quote from Kery and Chandler lists the limitations of t
 > The model makes the following assumptions:
 > 
 > - Replicate surveys at a site during a single season are independent (or else dependency must be modeled)
-> - Occurrence state \\( z_{it} = Bernoulli(\psi_{it})\\) does not change over replicate surveys at site \\(i\\) during season \\(t\\)
+> - Occurrence state `z(it) = Bernoulli(ψ(it))` does not change over replicate surveys at site `i` during season `t`
 > - There are no false-positive errors, i.e., a species can only be overlooked where it occurs, but it cannot be detected where it does not in fact occur (i.e., there are no false-positives)
 > 
 > --- [Marc Kery and Richard Chandler], lightly edited for clarity
 
-There are five important arguments to `colext`: four regression formulas (occupancy \\(\psi\\), colonization probability \\(\gamma\\), extinction probability \\(\epsilon\\), and detection probability \\(p\\)) and one specifying the data set to use.
+There are five important arguments to `colext`: four regression formulas (occupancy `ψ`, colonization probability `γ`, extinction probability `ε`, and detection probability `p` and one specifying the data set to use.
 
 The four regression formulas use only the right-hand side (that is, use only the `~ X` of `Y ~ X`) of standard R formula notion. For a primer on this notation, [this little document from the University of Chicago] is an excellent reference.
 
