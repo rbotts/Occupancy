@@ -92,7 +92,7 @@ Before we start, another quote from Kery and Chandler lists the limitations of t
 > The model makes the following assumptions:
 > 
 > - Replicate surveys at a site during a single season are independent (or else dependency must be modeled)
-> - Occurrence state `z(it) = Bernoulli(ψ(i,t))` does not change over replicate surveys at site `i` during season `t`
+> - Occurrence state `z(i,t) = Bernoulli(ψ(i,t))` does not change over replicate surveys at site `i` during season `t`
 > - There are no false-positive errors, i.e., a species can only be overlooked where it occurs, but it cannot be detected where it does not in fact occur (i.e., there are no false-positives)
 > 
 > --- [Marc Kery and Richard Chandler], lightly edited for clarity
