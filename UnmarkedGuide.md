@@ -3,8 +3,8 @@
 ## Table of Contents
 
 - [What is Occupancy?](#what-is-occupancy)
-- [Overview: Dynamic Occupancy Modeling with unmarked](#overview-dynamic-occupancy-modeling-with-unmarked)
-- [Using colext for single-species, multi-season models](#using-colext-for-single-species-multi-season-models)
+- [Overview: Dynamic Occupancy Modeling with `unmarked`](#overview-dynamic-occupancy-modeling-with-unmarked)
+- [Using `colext` for single-species, multi-season models](#using-colext-for-single-species-multi-season-models)
 	- [Creating an `unmarkedMultFrame`](#creating-an-unmarkedmultframe)
 	- [Creating `colext` models](#creating-colext-models)
 	- [Comparing model fit with `fitList`](#comparing-model-fit-with-fitlist)
@@ -76,6 +76,10 @@ The site-covariates **data.frame** `siteCovs` should have one column for each co
 The observations-covariates list `obsCovs` should be a **list of data.frames**. Each data.frame should have the same dimensions as `y` (that is, `surveyTotal` columns, with the rows corresponding to the rows (sites) of `y`). This is where information is stored about those covariates that change with each survey. For example, the temperature of the environment when each survey took place.
 
 The season-covariates list `yearlySiteCovs` should be a **list of matrices**. Each matrix should have `numPrimary` columns, with the rows corresponding to the rows (sites) of `y`. This is where information is stored about those covariates that change with each season, but *not* each survey. For example, the amount of rainfall in the previous season.
+
+**Good Covariates:**
+
+It is recommended that any numerical covariates (as opposed to categorical covariates, which should be encoded as 1 and 0) should be standardized, as such a unit conversion supposedly makes the computation more efficient. The `base` function `scale` could be useful for doing this. Don't forget to re-scale values back to the original units after doing the modeling and predictions!
 
 **A note about NA (missing) values in this data:**
 > AIC-based model selection requires that all models are fit to the same data. `unmarked` removes missing data in a context specific way.  For missing `siteCovs`, the entire row of data must be removed.  However, for missing `yearlySiteCovs` or `obsCovs`, only the corresponding observation are removed.  Thus, **if `unmarked` removes different observations from different models, the models cannot be compared using AIC**. A way around this is to remove the detection data corresponding to missing covariates before fitting the models.
