@@ -79,7 +79,7 @@ The season-covariates list `yearlySiteCovs` should be a **list of matrices**. Ea
 
 **Good Covariates:**
 
-It is recommended that any numerical covariates (as opposed to categorical covariates, which should be encoded as 1 and 0) should be standardized, as such a unit conversion supposedly makes the computation more efficient. The `base` function `scale` could be useful for doing this. Don't forget to re-scale values back to the original units after doing the modeling and predictions!
+It is recommended that any numerical covariates (as opposed to categorical covariates, which should be encoded as 1 and 0) should be standardized (to mean 0 and standard deviation 1), as such a unit conversion supposedly makes the computation more efficient. The `base` function `scale` could be useful for doing this. Don't forget to re-scale values back to the original units after doing the modeling and predictions!
 
 **A note about NA (missing) values in this data:**
 > AIC-based model selection requires that all models are fit to the same data. `unmarked` removes missing data in a context specific way.  For missing `siteCovs`, the entire row of data must be removed.  However, for missing `yearlySiteCovs` or `obsCovs`, only the corresponding observation are removed.  Thus, **if `unmarked` removes different observations from different models, the models cannot be compared using AIC**. A way around this is to remove the detection data corresponding to missing covariates before fitting the models.
