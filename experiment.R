@@ -29,7 +29,7 @@ height <- crop(x = height, y = costaRicaExtent)
 height[height == 0] <- NA #Nothing should be at 0 elevation, at least not without some higher/lower land right nearby
 hii <- crop(x = hii, y = costaRicaExtent)
 woodbiomass <- crop(x = woodbiomass, y = costaRicaExtent)
-toc()
+toc(log = TRUE)
 
 #Average surrounding cells to get smoothed distributions without NA holes
 tic("Focal raster data")
@@ -45,7 +45,7 @@ woodbiomass <- focal(x = woodbiomass,
                      w = matrix(data = 1, nrow = 3, ncol = 3),
                      fun = mean,
                      na.rm = TRUE)
-toc()
+toc(log = TRUE)
 
 #Add columns to occ.dat containing appropriate values from raster data
 coords <- data.frame("long" = occ.dat$Longitude, "lat" = occ.dat$Latitude)
@@ -167,13 +167,30 @@ for (ro in 1:length(camList)) {
     }
   }
 }
-toc()
+toc(log = TRUE)
 
 #Generate the site-covariates data.frame siteFrame
-hgt <- sapply(X = camList, FUN = function(x) {mean(occ.dat$Height[occ.dat$CamNumber1 == x])})
-human <- sapply(X = camList, FUN = function(x) {mean(occ.dat$HumanInfluence[occ.dat$CamNumber1 == x])})
-wood <- sapply(X = camList, FUN = function(x) {mean(occ.dat$ForestBiomass[occ.dat$CamNumber1 == x])})
-siteFrame <- data.frame("Site" = 1:length(camList), "Height" = hgt, "HumanInfluence" = human, "WoodBiomass" = wood, row.names = camList)
+hgt <- base::scale( #standardize to mean 0 and std dev 1
+  sapply(X = camList, FUN = function(x) {
+    #take an average to even out any variation between surveys
+    mean(occ.dat$Height[occ.dat$CamNumber1 == x])
+  })
+)
+human <- base::scale( #same as hgt
+  sapply(X = camList, FUN = function(x) {
+    mean(occ.dat$HumanInfluence[occ.dat$CamNumber1 == x])
+  })
+)
+wood <- base::scale( #same as hgt
+  sapply(X = camList, FUN = function(x) {
+    mean(occ.dat$ForestBiomass[occ.dat$CamNumber1 == x])
+  })
+)
+siteFrame <- data.frame("Site" = 1:length(camList),
+                        "Height" = hgt,
+                        "HumanInfluence" = human,
+                        "WoodBiomass" = wood,
+                        row.names = camList)
 
 #Generate the observation-covariates list of data.frames obsList
 surveyMat <- matrix(data = rep(1:(3*length(seasonList)), each = length(camList)),
@@ -194,4 +211,74 @@ umf <- unmarkedMultFrame(numPrimary = length(seasonList),
                          siteCovs = siteFrame,
                          obsCovs = obsList,
                          yearlySiteCovs = seaList)
-print(summary(umf))
+
+#colext models ----
+colextList <- function(varNames, data) {
+  #Function to produce a list of all colext models, given a vector of possible covariates
+  tic("Prepare all models")
+  #Function to produce a character vector of all possible combinations of values in `items`
+  everyCombo <- function(items) {
+    n <- length(items)
+    maxBin <- (2^n) - 1
+    len <- which.max(ifelse(test = as.numeric(intToBits(maxBin)), yes = 1:32, no = 0))
+    #get the highest digit that's actually used (we will use this to know which columns to ignore)
+
+    binList <- matrix(as.logical(intToBits(0:maxBin)), ncol = 32, byrow = TRUE)[,1:len]
+    #a matrix in which each row is a logical vector indicating which elements of `items` should be chosen in order to have every combination.
+    #nrow(binList) gives the total number of possible combinations (which should be maxBin)
+
+    comboList <- apply(X = binList, MARGIN = 1, FUN = function(x) {items[x]})
+    #a list containing every possible combination of items, including both "none" and "every"
+
+    return(comboList)
+    #unlisted such that each entry in vector is "sum" of components
+  }
+
+  cat("Generating model names...\n")
+  combo.0 <- sapply(X = everyCombo(varNames), FUN = paste, collapse = " + ")[-1] #get rid of "blank" entry, we'll put it back in later
+  combo.1 <- paste(combo.0, rep("- 1", length(combo.0))) #find all combos without intercepts
+  combo.all <- c("1", combo.0, combo.1) #combine "blank" entry, combos with, and combos without intercepts
+  combo.formChar <- paste("~", combo.all)
+
+  cat("Generating model list...\n")
+  fourList <- list()
+  for (h in 1:length(combo.formChar)) {
+    for (i in h:length(combo.formChar)) {
+      for (j in i:length(combo.formChar)) {
+        for (k in j:length(combo.formChar)) {
+          fourList <- c(fourList, list(c(combo.formChar[h],
+                                         combo.formChar[i],
+                                         combo.formChar[j],
+                                         combo.formChar[k])))
+        }
+      }
+    }
+  }
+  toc(log = TRUE)
+
+  tic("Model everything!!")
+  outList <- list()
+  nam <- rep(NA, length(fourList)) #preallocate name vector
+  for (i in 1:length(fourList)) { #Note: this modeling loop take an age and a half to run. Expect it to take several hours, if not several weeks. YOU HAVE BEEN WARNED.
+    cat(paste("Making model", i, "out of", length(fourList), "...\n"))
+    nam[i] <- paste(fourList[[i]], collapse = ",")
+    outList <- c(outList, list(colext(psiformula = as.formula(fourList[[i]][1]),
+                                      gammaformula = as.formula(fourList[[i]][2]),
+                                      epsilonformula = as.formula(fourList[[i]][3]),
+                                      pformula = as.formula(fourList[[i]][4]),
+                                      data = data)))
+  }
+  names(outList) <- nam
+  toc(log = TRUE)
+
+  tic("Model comparison")
+  models <- fitList(fits = outList)
+  modelFits <- modSel(models)
+  print(modelFits)
+  toc(log = TRUE)
+  return(outList)
+}
+
+allModels <- colextList(varNames = c("Site", "Height", "HumanInfluence", "WoodBiomass", "survey", "season"), data = umf)
+
+print(tic.log())
