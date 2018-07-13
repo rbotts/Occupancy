@@ -241,32 +241,62 @@ colextList <- function(varNames, data) {
   combo.formChar <- paste("~", combo.all)
 
   cat("Generating model list...\n")
+
+  #Preallocate some variables
   fourList <- list()
-  for (h in 1:length(combo.formChar)) {
-    for (i in h:length(combo.formChar)) {
-      for (j in i:length(combo.formChar)) {
-        for (k in j:length(combo.formChar)) {
+  startTime <- Sys.time()
+  l <- 1
+  n <- length(combo.formChar)
+
+  #Find all unique (permuatation) groups of 4. WARNING: This loop scales by n^4. With 6 variables, this loop alone will probably take a week or more to run.
+  for (h in 1:n) {
+    for (i in h:n) {
+      timeLeft <- rep(NA, times = length(i:n))
+      for (j in i:n) {
+        for (k in j:n) {
           fourList <- c(fourList, list(c(combo.formChar[h],
                                          combo.formChar[i],
                                          combo.formChar[j],
                                          combo.formChar[k])))
         }
+
+        #Report completion & estimate time left
+        completion <- l/(n^3)
+        timeElapsed <- Sys.time() - startTime
+        timeLeft[j] <- timeElapsed/completion
+        cat("\r", round(100*completion, digits = 2), "\b%",
+            "Estimate", round(mean(timeLeft, na.rm = TRUE)),
+            attr(timeElapsed, "units"), "remaining...")
+        l <- l + 1
       }
     }
   }
   toc(log = TRUE)
 
   tic("Model everything!!")
+
+  #Preallocate some variables
   outList <- list()
-  nam <- rep(NA, length(fourList)) #preallocate name vector
-  for (i in 1:length(fourList)) { #Note: this modeling loop take an age and a half to run. Expect it to take several hours, if not several weeks. YOU HAVE BEEN WARNED.
-    cat(paste("Making model", i, "out of", length(fourList), "...\n"))
+  n <- length(fourList)
+  nam <- rep(NA, times = n)
+  startTime <- Sys.time()
+
+  #Make all the models described by fourList. WARNING: n is equal to length(combo.formChar)^4, so this loop will take a VERY LONG TIME to complete.
+  for (i in 1:n) {
     nam[i] <- paste(fourList[[i]], collapse = ",")
     outList <- c(outList, list(colext(psiformula = as.formula(fourList[[i]][1]),
                                       gammaformula = as.formula(fourList[[i]][2]),
                                       epsilonformula = as.formula(fourList[[i]][3]),
                                       pformula = as.formula(fourList[[i]][4]),
                                       data = data)))
+
+    #Report completion & estimate time left
+    completion <- i/n
+    timeElapsed <- Sys.time() - startTime
+    timeLeft <- timeElapsed/completion
+    cat("\r", round(100*completion, digits = 2), "\b%",
+        "Estimate", round(timeLeft),
+        attr(timeElapsed, "units"), "remaining...")
   }
   names(outList) <- nam
   toc(log = TRUE)
