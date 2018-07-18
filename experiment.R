@@ -6,6 +6,8 @@ require("raster")
 require("lubridate")
 require("unmarked")
 require("tictoc")
+require("RcppAlgos")
+require("pbapply")
 occ.dat <- read.csv("~/Documents/MooringData-June2018-Clean.csv", stringsAsFactors = FALSE)
 
 #Add more granular/sensible "season" columns to occ.dat
@@ -213,7 +215,7 @@ umf <- unmarkedMultFrame(numPrimary = length(seasonList),
                          yearlySiteCovs = seaList)
 
 #colext models ----
-colextList <- function(varNames, data) {
+colextModelList <- function(varNames, data) {
   #Function to produce a list of all colext models, given a vector of possible covariates
   tic("Prepare all models")
   #Function to produce a character vector of all possible combinations of values in `items`
@@ -241,74 +243,85 @@ colextList <- function(varNames, data) {
   combo.formChar <- paste("~", combo.all)
 
   cat("Generating model list...\n")
-
-  #Preallocate some variables
-  fourList <- list()
-  startTime <- Sys.time()
-  l <- 1
-  n <- length(combo.formChar)
-
-  #Find all unique (permuatation) groups of 4. WARNING: This loop scales by n^4. With 6 variables, this loop alone will probably take a week or more to run.
-  for (h in 1:n) {
-    for (i in h:n) {
-      timeLeft <- rep(NA, times = length(i:n))
-      for (j in i:n) {
-        for (k in j:n) {
-          fourList <- c(fourList, list(c(combo.formChar[h],
-                                         combo.formChar[i],
-                                         combo.formChar[j],
-                                         combo.formChar[k])))
-        }
-
-        #Report completion & estimate time left
-        completion <- l/(n^3)
-        timeElapsed <- Sys.time() - startTime
-        timeLeft[j] <- timeElapsed/completion
-        cat("\r", round(100*completion, digits = 2), "\b%",
-            "Estimate", round(mean(timeLeft, na.rm = TRUE)),
-            attr(timeElapsed, "units"), "remaining...")
-        l <- l + 1
-      }
-    }
-  }
+  fourMat <- permuteGeneral(v = combo.formChar,
+                            m = 4,
+                            repetition = TRUE)
   toc(log = TRUE)
 
   tic("Model everything!!")
 
   #Preallocate some variables
-  outList <- list()
-  n <- length(fourList)
+  n <- nrow(fourMat)
   nam <- rep(NA, times = n)
+  timeElapsed <- as.list(rep(NA, 10)) #make it a list so the units for each entry are recorded separately
+  cat("Building models...\n")
   startTime <- Sys.time()
 
-  #Make all the models described by fourList. WARNING: n is equal to length(combo.formChar)^4, so this loop will take a VERY LONG TIME to complete.
-  for (i in 1:n) {
-    nam[i] <- paste(fourList[[i]], collapse = ",")
-    outList <- c(outList, list(colext(psiformula = as.formula(fourList[[i]][1]),
-                                      gammaformula = as.formula(fourList[[i]][2]),
-                                      epsilonformula = as.formula(fourList[[i]][3]),
-                                      pformula = as.formula(fourList[[i]][4]),
-                                      data = data)))
+  #Make all the models described by the rows of fourMat
+  #WARNING: n is equal to length(combo.formChar)^4, so this loop will take a VERY LONG TIME to complete.
+  outMap <- mapply(fourMat[,1],
+                   fourMat[,2],
+                   fourMat[,3],
+                   fourMat[,4],
+                   1:n,
+                   FUN = function(psi, gam, eps, p, i) {
 
     #Report completion & estimate time left
     completion <- i/n
-    timeElapsed <- Sys.time() - startTime
-    timeLeft <- timeElapsed/completion
-    cat("\r", round(100*completion, digits = 2), "\b%",
-        "Estimate", round(timeLeft),
-        attr(timeElapsed, "units"), "remaining...")
-  }
-  names(outList) <- nam
-  toc(log = TRUE)
+    timeElapsed[[(i %% 10) + 1]] <- Sys.time() - startTime
+    timeElapsedAvg <- mean(unlist(timeElapsed), na.rm = TRUE)
+    timeLeft <- (timeElapsedAvg/completion) - timeElapsedAvg
+    cat("\r", sprintf(fmt = "%.02f", 100*completion), "\b%",
+        "Estimate", signif(timeLeft, digits = 3),
+        attr(timeElapsed[[(i %% 10) + 1]], "units"), "remaining...")
 
-  tic("Model comparison")
-  models <- fitList(fits = outList)
-  modelFits <- modSel(models)
-  print(modelFits)
+    #Actually make the model
+    return(colext(psiformula = as.formula(psi),
+                  gammaformula = as.formula(gam),
+                  epsilonformula = as.formula(eps),
+                  pformula = as.formula(p),
+                  data = data))
+  })
+  cat("\n")
   toc(log = TRUE)
-  return(outList)
+  return(outMap)
 }
 
-allModels <- colextList(varNames = c("Site", "Height", "HumanInfluence", "WoodBiomass", "survey", "season"), data = umf)
+colextFitList <- function(modelList) {
+  tic("Created fitList")
+  modelList <- fitList(fits = modelList)
+  toc(log = TRUE)
+
+  n <- length(modelList@fits)
+  names(modelList@fits) <- 1:n
+  tic("Renamed fitList")
+  for (i in 1:n) {
+    psi <- as.character(modelList@fits[[i]]@psiformula)[2]
+    gam <- as.character(modelList@fits[[i]]@gamformula)[2]
+    eps <- as.character(modelList@fits[[i]]@epsformula)[2]
+    det <- as.character(modelList@fits[[i]]@detformula)[2]
+    modelName <- paste0("psi(", psi,
+                        "), gam(", gam,
+                        "), eps(", eps,
+                        "), det(", det, ")")
+    names(modelList@fits)[i] <- modelName
+  }
+  toc(log = TRUE)
+  return(modelList)
+}
+
+#This call took about 9.5 hours on my 3GHz quad-thread machine with only "Site" and "Height" enabled... so expect to wait a looooooooooong time for this to finish. It is parallelized though, so throw as many theads as you can at it.
+allModels <- colextModelList(varNames = c("Site",
+                                          "Height" #,
+                                          # "HumanInfluence",
+                                          # "WoodBiomass",
+                                          # "survey",
+                                          # "season"
+                                          ),
+                        data = umf)
+
+#This call may take a good few minutes. Unfortunately the long part of the work is done by a `colext` function, so I can't add a progress indicator. Just let it run, it will (usually) give informative errors/warnings when it's done, if something makes it angry.
+allList <- colextFitList(allModels)
 
 print(tic.log())
+tic.clearlog()
