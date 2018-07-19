@@ -267,6 +267,7 @@ colextModelList <- function(varNames, data) {
                    FUN = function(psi, gam, eps, p, i) {
 
     #Report completion & estimate time left
+    #Based on this algorithm: https://tjwieg.github.io/SimpleProgramRuntimeEstimation/
     completion <- i/n
     timeElapsed[[(i %% 10) + 1]] <- Sys.time() - startTime
     timeElapsedAvg <- mean(unlist(timeElapsed), na.rm = TRUE)
